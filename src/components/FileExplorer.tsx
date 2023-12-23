@@ -7,14 +7,20 @@ export default function FileExplorer({
 	drives,
 	contents,
 	folderPaths,
+	updateContents,
 }: {
 	drives: Drive[];
 	contents: DriveItem[];
 	folderPaths: FolderPaths | null;
+	updateContents: () => Promise<void>;
 }) {
 	return (
-		<div className="grid h-screen grid-cols-[300px_1fr]">
-			<Sidebar drives={drives} folderPaths={folderPaths} />
+		<div className="grid h-screen grid-cols-[270px_1fr]">
+			<Sidebar
+				updateContents={updateContents}
+				drives={drives}
+				folderPaths={folderPaths}
+			/>
 			<main className="sticky flex-col h-full overflow-y-auto p-6 bg-[#ffffff] dark:bg-[#333333]">
 				<Header />
 				<Contents contents={contents} />

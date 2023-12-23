@@ -32,11 +32,11 @@ export default function DriveComponent({ drive }: { drive: Drive }) {
 		<>
 			<a
 				key={drive.letter}
-				className="flex py-1 text-black hover:text-[#000000] hover:bg-[#e5e5e5] rounded-md"
+				className="flex p-2 text-black hover:text-[#000000] hover:bg-[#e5e5e5] rounded-md"
 				href="#"
 				onClick={() => setPath((oldPath) => [...oldPath, `${drive.letter}:\\`])}
 			>
-				<div className="pl-2">
+				<div>
 					<div className="flex mb-1">
 						<HardDriveIcon className="w-6 h-6 mr-2" />
 						{drive.name}&nbsp;({drive.letter}:)

@@ -1,15 +1,15 @@
 import { Drive, FolderPaths, PathContextType } from "@/lib/types";
-import { PathContext, hasPreviousPath } from "@/lib/utils";
+import { PathContext } from "@/lib/utils";
 import {
 	AppWindowIcon,
-	ArrowLeftIcon,
-	ArrowRightIcon,
-	ArrowUpIcon,
 	DownloadIcon,
 	FileImageIcon,
+	FilePlusIcon,
 	FilesIcon,
+	FolderPlusIcon,
 	HardDriveIcon,
 	MusicIcon,
+	RefreshCwIcon,
 	VideoIcon,
 } from "lucide-react";
 import { useContext } from "react";
@@ -19,9 +19,11 @@ import { Button } from "./ui/button";
 export default function Sidebar({
 	drives,
 	folderPaths,
+	updateContents,
 }: {
 	drives: Drive[];
 	folderPaths: FolderPaths | null;
+	updateContents: () => Promise<void>;
 }) {
 	const quickAccess = [
 		{
@@ -63,53 +65,37 @@ export default function Sidebar({
 			</div>
 		);
 
-	const { pathIndex, setPathIndex, path, setPath } = useContext(
-		PathContext
-	) as PathContextType;
+	const { setPath } = useContext(PathContext) as PathContextType;
 
 	return (
 		<>
 			<aside className="bg-[#ffffff] dark:bg-[#333333] text-black dark:text-white p-6 overflow-y-auto border-r border-gray-200 dark:border-gray-800">
-				<h1 className="text-2xl font-bold mb-6">File Explorer</h1>
-				<div>
+				<h1 className="text-2xl font-bold mb-3">File Explorer</h1>
+				<div className="mb-3">
 					<Button
-						className="h-10 p-3 select-none"
+						title="New File"
+						className="h-10 p-3 mr-2 select-none"
 						variant="outline"
-						disabled={pathIndex === 0}
-						onClick={() =>
-							pathIndex > 0 ? setPathIndex((index) => index - 1) : {}
-						}
 					>
-						<ArrowLeftIcon className="w-4 h-4" />
-						<span className="sr-only">Back</span>
+						<FilePlusIcon className="w-4 h-4" />
+						<span className="sr-only">New File</span>
 					</Button>
 					<Button
-						className="h-10 p-3 select-none"
+						title="New Folder"
+						className="h-10 p-3 mr-2 select-none"
 						variant="outline"
-						disabled={pathIndex === path.length - 1}
-						onClick={() =>
-							pathIndex < path.length - 1
-								? setPathIndex((index) => index + 1)
-								: {}
-						}
 					>
-						<ArrowRightIcon className="w-4 h-4" />
-						<span className="sr-only">Forward</span>
+						<FolderPlusIcon className="w-4 h-4" />
+						<span className="sr-only">New Folder</span>
 					</Button>
 					<Button
+						title="Refresh"
 						className="h-10 p-3 select-none"
 						variant="outline"
-						disabled={!hasPreviousPath(path[pathIndex])}
-						onClick={() =>
-							setPath((oldPath) => {
-								const splitted_array = oldPath[pathIndex].split("\\");
-								splitted_array.pop();
-								return [...oldPath, splitted_array.join("\\")];
-							})
-						}
+						onClick={async () => await updateContents()}
 					>
-						<ArrowUpIcon className="w-4 h-4" />
-						<span className="sr-only">Up Directory</span>
+						<RefreshCwIcon className="w-4 h-4" />
+						<span className="sr-only">Refresh</span>
 					</Button>
 				</div>
 				<nav className="space-y-1 select-none">
@@ -131,7 +117,9 @@ export default function Sidebar({
 				<nav className="space-y-1 mt-6">
 					<h2 className="text-xl font-semibold mb-2">Volumes</h2>
 					{drives.length > 0 &&
-						drives.map((drive) => <DriveComponent drive={drive} />)}
+						drives.map((drive) => (
+							<DriveComponent key={drive.letter} drive={drive} />
+						))}
 					{drives.length === 0 && (
 						<a
 							className="flex py-1 text-black hover:text-[#000000] hover:bg-[#e5e5e5] rounded-md"

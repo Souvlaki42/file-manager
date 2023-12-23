@@ -15,7 +15,7 @@ function App() {
 		return typeof window.__TAURI_IPC__ === "function";
 	}
 
-	async function update_contents() {
+	async function updateContents() {
 		const newContents = await invoke<DriveItem[]>("get_contents", {
 			path: path[pathIndex],
 		});
@@ -35,7 +35,7 @@ function App() {
 
 	useEffect(() => {
 		(async () => {
-			await update_contents();
+			await updateContents();
 		})();
 	}, [pathIndex]);
 
@@ -47,6 +47,7 @@ function App() {
 						drives={drives}
 						contents={contents}
 						folderPaths={folderPaths}
+						updateContents={updateContents}
 					/>
 				)}
 				{!backendAccessEnabled() && (

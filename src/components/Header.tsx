@@ -41,6 +41,7 @@ export default function Header() {
 			<header className="flex items-center justify-between mb-6">
 				<div className="flex items-center space-x-2 w-2/3 mr-2">
 					<Button
+						title="Back"
 						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={pathIndex === 0}
@@ -52,6 +53,7 @@ export default function Header() {
 						<span className="sr-only">Back</span>
 					</Button>
 					<Button
+						title="Forward"
 						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={pathIndex === path.length - 1}
@@ -65,6 +67,7 @@ export default function Header() {
 						<span className="sr-only">Forward</span>
 					</Button>
 					<Button
+						title="Up Directory"
 						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={!hasPreviousPath(path[pathIndex])}

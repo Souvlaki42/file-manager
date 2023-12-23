@@ -1,43 +1,16 @@
-/**
- * v0 by Vercel.
- * @see https://v0.dev/t/pEbP3kbD2At
- */
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Drive, DriveItem, FolderPaths } from "@/lib/types";
-import { invoke } from "@tauri-apps/api/tauri";
 import {
 	AppWindowIcon,
-	ArrowLeftIcon,
-	ArrowRightIcon,
-	ArrowUpIcon,
 	DownloadIcon,
-	FileIcon,
 	FileImageIcon,
 	FilesIcon,
-	FolderIcon,
 	HardDriveIcon,
 	MusicIcon,
-	SearchIcon,
 	VideoIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Progress } from "./ui/progress";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "./ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "./ui/table";
+import Contents from "./Contents";
+import DriveComponent from "./DriveComponent";
+import Header from "./Header";
 
 export default function FileExplorer({
 	drives,
@@ -53,44 +26,6 @@ export default function FileExplorer({
 	folderPaths: FolderPaths | null;
 }) {
 	const [path, setPath] = pathState;
-	const [pathIndex, setPathIndex] = pathIndexState;
-
-	const [pathInput, setPathInput] = useState<string>(path[path.length - 1]);
-
-	function hasPreviousPath(): boolean {
-		return (
-			countOccurrences(path[pathIndex], "\\") >= 1 &&
-			!(path[pathIndex][path[pathIndex].length - 1] === "\\")
-		);
-	}
-
-	function countOccurrences(inputString: string, targetChar: string): number {
-		let count = 0;
-		for (let i = 0; i < inputString.length; i++) {
-			if (inputString[i] === targetChar) {
-				count++;
-			}
-		}
-		return count;
-	}
-
-	function bytesToGB(bytes: number): number {
-		const gb = bytes / (1024 * 1024 * 1024);
-		return Number(gb.toFixed(2));
-	}
-
-	function calculateFreeSpacePercentageInGB(
-		totalSpace: number,
-		freeSpace: number
-	): number {
-		if (totalSpace <= 0 || freeSpace <= 0) return 0;
-
-		return Number(((freeSpace / totalSpace) * 100).toFixed(2));
-	}
-
-	useEffect(() => {
-		setPathInput(path[pathIndex]);
-	}, [path, pathIndex]);
 
 	const quickAccess = [
 		{
@@ -149,33 +84,7 @@ export default function FileExplorer({
 					<h2 className="text-xl font-semibold mb-2">Volumes</h2>
 					{drives.length > 0 &&
 						drives.map((drive) => (
-							<a
-								key={drive.letter}
-								className="flex py-1 text-black hover:text-[#000000] hover:bg-[#e5e5e5] rounded-md"
-								href="#"
-								onClick={() =>
-									setPath((oldPath) => [...oldPath, `${drive.letter}:\\`])
-								}
-							>
-								<div className="pl-2">
-									<div className="flex mb-1">
-										<HardDriveIcon className="w-6 h-6 mr-2" />
-										{drive.name}&nbsp;({drive.letter}:)
-									</div>
-									<div className="mb-1">
-										<Progress
-											value={calculateFreeSpacePercentageInGB(
-												bytesToGB(drive.total_capacity),
-												bytesToGB(drive.available_capacity)
-											)}
-										/>
-									</div>
-									<div>
-										{bytesToGB(drive.available_capacity)} GB free of&nbsp;
-										{bytesToGB(drive.total_capacity)} GB
-									</div>
-								</div>
-							</a>
+							<DriveComponent drive={drive} setPath={setPath} />
 						))}
 					{drives.length === 0 && (
 						<a
@@ -189,135 +98,8 @@ export default function FileExplorer({
 				</nav>
 			</aside>
 			<main className="sticky flex-col h-full overflow-y-auto p-6 bg-[#ffffff] dark:bg-[#333333]">
-				<header className="flex items-center justify-between mb-6">
-					<div className="flex items-center space-x-2 w-2/3 mr-2">
-						<Button
-							className="h-10 p-3"
-							variant="outline"
-							disabled={pathIndex === 0}
-							onClick={() =>
-								pathIndex > 0 ? setPathIndex((index) => index - 1) : {}
-							}
-						>
-							<ArrowLeftIcon className="w-4 h-4" />
-							<span className="sr-only">Back</span>
-						</Button>
-						<Button
-							className="h-10 p-3"
-							variant="outline"
-							disabled={pathIndex === path.length - 1}
-							onClick={() =>
-								pathIndex < path.length - 1
-									? setPathIndex((index) => index + 1)
-									: {}
-							}
-						>
-							<ArrowRightIcon className="w-4 h-4" />
-							<span className="sr-only">Forward</span>
-						</Button>
-						<Button
-							className="h-10 p-3"
-							variant="outline"
-							disabled={!hasPreviousPath()}
-							onClick={() =>
-								setPath((oldPath) => {
-									const splitted_array = oldPath[pathIndex].split("\\");
-									splitted_array.pop();
-									return [...oldPath, splitted_array.join("\\")];
-								})
-							}
-						>
-							<ArrowUpIcon className="w-4 h-4" />
-							<span className="sr-only">Up Directory</span>
-						</Button>
-						<div className="relative w-full ml-2">
-							<FolderIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
-							<Input
-								onKeyDown={(e) => {
-									if (e.key === "Enter")
-										setPath((oldPath) => [...oldPath, pathInput]);
-								}}
-								onChange={(e) => setPathInput(e.target.value)}
-								value={pathInput}
-								className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
-								placeholder="This PC > Documents"
-								type="text"
-							/>
-						</div>
-					</div>
-					<div className="flex items-center space-x-2 w-1/3">
-						<div className="relative w-full">
-							<SearchIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
-							<Input
-								className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
-								placeholder={`Search ${path}`}
-								type="search"
-							/>
-						</div>
-						<Select defaultValue="all">
-							<SelectTrigger className="w-[180px]">
-								<SelectValue placeholder="Search Filter" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All Contents</SelectItem>
-								<SelectItem value="files">Files</SelectItem>
-								<SelectItem value="directories">Directories</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</header>
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Name</TableHead>
-							<TableHead>Created</TableHead>
-							<TableHead>Modified</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{contents.length !== 0 &&
-							contents.map((it) => (
-								<TableRow key={it.path}>
-									<TableCell
-										className="flex flex-row hover:cursor-pointer"
-										onClick={
-											it.kind === "Directory"
-												? () => setPath((oldPath) => [...oldPath, it.path])
-												: async () =>
-														await invoke("open_file_with", {
-															filePath: it.path,
-														})
-										}
-									>
-										{it.kind === "Directory" && (
-											<FolderIcon className="w-6 h-6 mr-2" />
-										)}
-										{it.kind === "File" && (
-											<FileIcon className="w-6 h-6 mr-2" />
-										)}
-										{it.name}
-									</TableCell>
-									<TableCell className="pl-2">
-										<time dateTime={new Date(it.created).toLocaleString()}>
-											{new Date(it.created).toLocaleString()}
-										</time>
-									</TableCell>
-									<TableCell>
-										<time dateTime={new Date(it.modified).toLocaleString()}>
-											{new Date(it.modified).toLocaleString()}
-										</time>
-									</TableCell>
-								</TableRow>
-							))}
-						{contents.length === 0 && (
-							<TableRow>
-								<TableCell colSpan={4}>
-									This directory either has no contents or it doesn't exist.
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
-				</Table>
+				<Header pathState={[path, setPath]} pathIndexState={pathIndexState} />
+				<Contents contents={contents} setPath={setPath} />
 			</main>
 		</div>
 	);

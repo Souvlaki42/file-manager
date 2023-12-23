@@ -25,3 +25,10 @@ export type FolderPaths = {
 	music: string;
 	videos: string;
 };
+
+export type PathContextType = {
+	path: string[];
+	setPath: React.Dispatch<React.SetStateAction<string[]>>;
+	pathIndex: number;
+	setPathIndex: React.Dispatch<React.SetStateAction<number>>;
+};

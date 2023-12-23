@@ -1,3 +1,5 @@
+import { PathContextType } from "@/lib/types";
+import { PathContext, hasPreviousPath } from "@/lib/utils";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -5,7 +7,7 @@ import {
 	FolderIcon,
 	SearchIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -16,38 +18,23 @@ import {
 	SelectValue,
 } from "./ui/select";
 
-export default function Header({
-	pathState,
-	pathIndexState,
-}: {
-	pathState: [string[], React.Dispatch<React.SetStateAction<string[]>>];
-	pathIndexState: [number, React.Dispatch<React.SetStateAction<number>>];
-}) {
-	const [path, setPath] = pathState;
-	const [pathIndex, setPathIndex] = pathIndexState;
+export default function Header() {
+	if (PathContext == null)
+		return (
+			<div className="grid text-center">
+				<p>Something went wrong. Try again later.</p>
+			</div>
+		);
+
+	const { pathIndex, setPathIndex, path, setPath } = useContext(
+		PathContext
+	) as PathContextType;
 
 	const [pathInput, setPathInput] = useState<string>(path[path.length - 1]);
 
 	useEffect(() => {
 		setPathInput(path[pathIndex]);
 	}, [path, pathIndex]);
-
-	function hasPreviousPath(): boolean {
-		return (
-			countOccurrences(path[pathIndex], "\\") >= 1 &&
-			!(path[pathIndex][path[pathIndex].length - 1] === "\\")
-		);
-	}
-
-	function countOccurrences(inputString: string, targetChar: string): number {
-		let count = 0;
-		for (let i = 0; i < inputString.length; i++) {
-			if (inputString[i] === targetChar) {
-				count++;
-			}
-		}
-		return count;
-	}
 
 	return (
 		<>
@@ -80,7 +67,7 @@ export default function Header({
 					<Button
 						className="h-10 p-3 select-none"
 						variant="outline"
-						disabled={!hasPreviousPath()}
+						disabled={!hasPreviousPath(path[pathIndex])}
 						onClick={() =>
 							setPath((oldPath) => {
 								const splitted_array = oldPath[pathIndex].split("\\");

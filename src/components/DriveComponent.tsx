@@ -1,14 +1,10 @@
-import { Drive } from "@/lib/types";
+import { Drive, PathContextType } from "@/lib/types";
+import { PathContext } from "@/lib/utils";
 import { HardDriveIcon } from "lucide-react";
+import { useContext } from "react";
 import { Progress } from "./ui/progress";
 
-export default function DriveComponent({
-	drive,
-	setPath,
-}: {
-	drive: Drive;
-	setPath: React.Dispatch<React.SetStateAction<string[]>>;
-}) {
+export default function DriveComponent({ drive }: { drive: Drive }) {
 	function bytesToGB(bytes: number): number {
 		const gb = bytes / (1024 * 1024 * 1024);
 		return Number(gb.toFixed(2));
@@ -22,6 +18,15 @@ export default function DriveComponent({
 
 		return Number(((freeSpace / totalSpace) * 100).toFixed(2));
 	}
+
+	if (PathContext == null)
+		return (
+			<div className="grid text-center">
+				<p>Something went wrong. Try again later.</p>
+			</div>
+		);
+
+	const { setPath } = useContext(PathContext) as PathContextType;
 
 	return (
 		<>

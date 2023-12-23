@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
 import FileExplorer from "./components/FileExplorer";
 import { Drive, DriveItem, FolderPaths } from "./lib/types";
+import { PathContext } from "./lib/utils";
 
 function App() {
 	const [drives, setDrives] = useState<Drive[]>([]);
@@ -40,23 +41,23 @@ function App() {
 
 	return (
 		<>
-			{backendAccessEnabled() && (
-				<FileExplorer
-					drives={drives}
-					pathState={[path, setPath]}
-					pathIndexState={[pathIndex, setPathIndex]}
-					contents={contents}
-					folderPaths={folderPaths}
-				/>
-			)}
-			{!backendAccessEnabled() && (
-				<div className="grid text-center">
-					<p>
-						This website cannot work without its Tauri backend. Try using the
-						app instead.
-					</p>
-				</div>
-			)}
+			<PathContext.Provider value={{ path, setPath, pathIndex, setPathIndex }}>
+				{backendAccessEnabled() && (
+					<FileExplorer
+						drives={drives}
+						contents={contents}
+						folderPaths={folderPaths}
+					/>
+				)}
+				{!backendAccessEnabled() && (
+					<div className="grid text-center">
+						<p>
+							This website cannot work without its Tauri backend. Try using the
+							app instead.
+						</p>
+					</div>
+				)}
+			</PathContext.Provider>
 		</>
 	);
 }

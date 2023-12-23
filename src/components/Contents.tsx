@@ -1,6 +1,8 @@
-import { DriveItem } from "@/lib/types";
+import { DriveItem, PathContextType } from "@/lib/types";
+import { PathContext } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/tauri";
 import { FileIcon, FolderIcon } from "lucide-react";
+import { useContext } from "react";
 import {
 	Table,
 	TableBody,
@@ -10,13 +12,7 @@ import {
 	TableRow,
 } from "./ui/table";
 
-export default function Contents({
-	contents,
-	setPath,
-}: {
-	contents: DriveItem[];
-	setPath: React.Dispatch<React.SetStateAction<string[]>>;
-}) {
+export default function Contents({ contents }: { contents: DriveItem[] }) {
 	function formatBytesDynamically(bytes: number): string {
 		const kilobyte = 1024;
 		const megabyte = kilobyte * 1024;
@@ -32,6 +28,15 @@ export default function Contents({
 			return `${(bytes / gigabyte).toFixed(2)} GB`;
 		}
 	}
+
+	if (PathContext == null)
+		return (
+			<div className="grid text-center">
+				<p>Something went wrong. Try again later.</p>
+			</div>
+		);
+
+	const { setPath } = useContext(PathContext) as PathContextType;
 
 	return (
 		<>

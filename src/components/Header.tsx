@@ -112,7 +112,7 @@ export default function Header({
 						<SearchIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
 						<Input
 							className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
-							placeholder={`Search ${path}`}
+							placeholder={`Search ${path[pathIndex]}`}
 							type="search"
 						/>
 					</div>

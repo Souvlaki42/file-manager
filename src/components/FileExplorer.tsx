@@ -3,14 +3,9 @@
  * @see https://v0.dev/t/pEbP3kbD2At
  */
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Drive, DriveItem, FolderPaths } from "@/lib/types";
+import { invoke } from "@tauri-apps/api/tauri";
 import {
 	AppWindowIcon,
 	ArrowLeftIcon,
@@ -20,16 +15,21 @@ import {
 	FileIcon,
 	FileImageIcon,
 	FilesIcon,
-	FilterIcon,
 	FolderIcon,
 	HardDriveIcon,
-	MoreHorizontalIcon,
 	MusicIcon,
 	SearchIcon,
 	VideoIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Progress } from "./ui/progress";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
 import {
 	Table,
 	TableBody,
@@ -250,23 +250,20 @@ export default function FileExplorer({
 							<SearchIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
 							<Input
 								className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
-								placeholder="Search files"
+								placeholder={`Search ${path}`}
 								type="search"
 							/>
 						</div>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button size="icon" variant="outline">
-									<FilterIcon className="w-4 h-4" />
-									<span className="sr-only">Filter Files</span>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem>All Files</DropdownMenuItem>
-								<DropdownMenuItem>Directories</DropdownMenuItem>
-								<DropdownMenuItem>Files</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+						<Select defaultValue="all">
+							<SelectTrigger className="w-[180px]">
+								<SelectValue placeholder="Search Filter" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Contents</SelectItem>
+								<SelectItem value="files">Files</SelectItem>
+								<SelectItem value="directories">Directories</SelectItem>
+							</SelectContent>
+						</Select>
 					</div>
 				</header>
 				<Table>
@@ -275,7 +272,6 @@ export default function FileExplorer({
 							<TableHead>Name</TableHead>
 							<TableHead>Created</TableHead>
 							<TableHead>Modified</TableHead>
-							<TableHead>Action</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -287,7 +283,10 @@ export default function FileExplorer({
 										onClick={
 											it.kind === "Directory"
 												? () => setPath((oldPath) => [...oldPath, it.path])
-												: () => {}
+												: async () =>
+														await invoke("open_file_with", {
+															filePath: it.path,
+														})
 										}
 									>
 										{it.kind === "Directory" && (
@@ -307,12 +306,6 @@ export default function FileExplorer({
 										<time dateTime={new Date(it.modified).toLocaleString()}>
 											{new Date(it.modified).toLocaleString()}
 										</time>
-									</TableCell>
-									<TableCell>
-										<Button size="icon" variant="outline">
-											<MoreHorizontalIcon className="w-4 h-4" />
-											<span className="sr-only">More</span>
-										</Button>
 									</TableCell>
 								</TableRow>
 							))}

@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
-use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH};
+use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH, process::Command};
 use sysinfo::{System, Disks};
 
 #[derive(Debug, serde::Serialize)]
@@ -56,6 +56,23 @@ struct FolderPaths {
     pictures: String,
     music: String,
     videos: String,
+}
+
+#[tauri::command]
+fn open_file_with(file_path: String) -> Result<(), String> {
+    match Command::new("cmd")
+        .args(&["/C", "start", "openwith", file_path.as_str()])
+        .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to open 'Open With' window for file: {}", file_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
 }
 
 #[tauri::command]
@@ -184,7 +201,7 @@ fn get_contents(path: String) -> Vec<DriveItem> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths])
+        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file_with])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

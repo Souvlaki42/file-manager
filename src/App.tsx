@@ -14,6 +14,13 @@ function App() {
 		return typeof window.__TAURI_IPC__ === "function";
 	}
 
+	async function update_contents() {
+		const newContents = await invoke<DriveItem[]>("get_contents", {
+			path: path[pathIndex],
+		});
+		setContents(newContents);
+	}
+
 	useEffect(() => {
 		(async () => {
 			setDrives(await invoke<Drive[]>("get_volumes"));
@@ -27,10 +34,7 @@ function App() {
 
 	useEffect(() => {
 		(async () => {
-			const newContents = await invoke<DriveItem[]>("get_contents", {
-				path: path[pathIndex],
-			});
-			setContents(newContents);
+			await update_contents();
 		})();
 	}, [pathIndex]);
 

@@ -54,7 +54,7 @@ export default function Header({
 			<header className="flex items-center justify-between mb-6">
 				<div className="flex items-center space-x-2 w-2/3 mr-2">
 					<Button
-						className="h-10 p-3"
+						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={pathIndex === 0}
 						onClick={() =>
@@ -65,7 +65,7 @@ export default function Header({
 						<span className="sr-only">Back</span>
 					</Button>
 					<Button
-						className="h-10 p-3"
+						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={pathIndex === path.length - 1}
 						onClick={() =>
@@ -78,7 +78,7 @@ export default function Header({
 						<span className="sr-only">Forward</span>
 					</Button>
 					<Button
-						className="h-10 p-3"
+						className="h-10 p-3 select-none"
 						variant="outline"
 						disabled={!hasPreviousPath()}
 						onClick={() =>
@@ -120,7 +120,7 @@ export default function Header({
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder="Search Filter" />
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent className="select-none">
 							<SelectItem value="all">All Contents</SelectItem>
 							<SelectItem value="files">Files</SelectItem>
 							<SelectItem value="directories">Directories</SelectItem>

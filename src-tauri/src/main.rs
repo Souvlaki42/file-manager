@@ -59,9 +59,9 @@ struct FolderPaths {
 }
 
 #[tauri::command]
-fn open_file_with(file_path: String) -> Result<(), String> {
+fn open_file(file_path: String, open_with: bool) -> Result<(), String> {
     match Command::new("cmd")
-        .args(&["/C", "start", "openwith", file_path.as_str()])
+        .args(&["/C", "start", if open_with {"openwith"} else {""}, file_path.as_str()])
         .status()
     {
         Ok(status) => {
@@ -201,7 +201,7 @@ fn get_contents(path: String) -> Vec<DriveItem> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file_with])
+        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -56,7 +56,7 @@ export default function Sidebar({
 		<>
 			<aside className="bg-[#ffffff] dark:bg-[#333333] text-black dark:text-white p-6 overflow-y-auto border-r border-gray-200 dark:border-gray-800">
 				<h1 className="text-2xl font-bold mb-6">File Explorer</h1>
-				<nav className="space-y-1">
+				<nav className="space-y-1 select-none">
 					<h2 className="text-xl font-semibold mb-2">Quick Access</h2>
 					{quickAccess.map((item) => (
 						<a

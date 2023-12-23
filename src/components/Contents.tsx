@@ -17,14 +17,31 @@ export default function Contents({
 	contents: DriveItem[];
 	setPath: React.Dispatch<React.SetStateAction<string[]>>;
 }) {
+	function formatBytesDynamically(bytes: number): string {
+		const kilobyte = 1024;
+		const megabyte = kilobyte * 1024;
+		const gigabyte = megabyte * 1024;
+
+		if (bytes < kilobyte) {
+			return `${bytes} B`;
+		} else if (bytes < megabyte) {
+			return `${(bytes / kilobyte).toFixed(2)} KB`;
+		} else if (bytes < gigabyte) {
+			return `${(bytes / megabyte).toFixed(2)} MB`;
+		} else {
+			return `${(bytes / gigabyte).toFixed(2)} GB`;
+		}
+	}
+
 	return (
 		<>
 			<Table>
-				<TableHeader>
+				<TableHeader className="select-none">
 					<TableRow>
 						<TableHead>Name</TableHead>
 						<TableHead>Created</TableHead>
 						<TableHead>Modified</TableHead>
+						<TableHead>Size</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -37,8 +54,9 @@ export default function Contents({
 										it.kind === "Directory"
 											? () => setPath((oldPath) => [...oldPath, it.path])
 											: async () =>
-													await invoke("open_file_with", {
+													await invoke("open_file", {
 														filePath: it.path,
+														openWith: true,
 													})
 									}
 								>
@@ -53,10 +71,13 @@ export default function Contents({
 										{new Date(it.created).toLocaleString()}
 									</time>
 								</TableCell>
-								<TableCell>
+								<TableCell className="pl-2">
 									<time dateTime={new Date(it.modified).toLocaleString()}>
 										{new Date(it.modified).toLocaleString()}
 									</time>
+								</TableCell>
+								<TableCell>
+									{it.kind === "File" ? formatBytesDynamically(it.size) : "-"}
 								</TableCell>
 							</TableRow>
 						))}

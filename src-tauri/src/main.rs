@@ -50,6 +50,7 @@ fn is_hidden(path: &Path) -> bool {
 
 #[derive(Debug, serde::Serialize)]
 struct FolderPaths {
+    trash: String,
     desktop: String,
     downloads: String,
     documents: String,
@@ -68,7 +69,41 @@ fn open_file(file_path: String, open_with: bool) -> Result<(), String> {
             if status.success() {
                 Ok(())
             } else {
-                Err(format!("Failed to open 'Open With' window for file: {}", file_path))
+                Err(format!("Failed to open {}for file: {}", if open_with { "'Open With' window "} else {""}, file_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
+}
+
+#[tauri::command]
+fn create_file(file_path: String) -> Result<(), String> {
+    match Command::new("cmd")
+        .args(&["/C", "touch", file_path.as_str()])
+        .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to create the file: {}", file_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
+}
+
+#[tauri::command]
+fn create_folder(folder_path: String) -> Result<(), String> {
+    match Command::new("cmd")
+        .args(&["/C", "mkdir", folder_path.as_str()])
+        .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to create the folder: {}", folder_path))
             }
         }
         Err(e) => Err(format!("Error executing command: {}", e)),
@@ -78,6 +113,7 @@ fn open_file(file_path: String, open_with: bool) -> Result<(), String> {
 #[tauri::command]
 fn get_folder_paths() -> FolderPaths {
     let mut folder_paths = FolderPaths {
+        trash: String::new(),
         desktop: String::new(),
         downloads: String::new(),
         documents: String::new(),
@@ -87,6 +123,7 @@ fn get_folder_paths() -> FolderPaths {
     };
 
     if cfg!(windows) {
+        folder_paths.trash = PathBuf::from("C:\\$Recycle.Bin").as_path().to_string_lossy().to_string();
         folder_paths.desktop = PathBuf::from(format!(
             "{}\\Desktop",
             std::env::var("USERPROFILE").unwrap()
@@ -112,6 +149,7 @@ fn get_folder_paths() -> FolderPaths {
             std::env::var("USERPROFILE").unwrap()
         )).as_path().to_string_lossy().to_string();
     } else {
+        folder_paths.trash = PathBuf::from("~/.local/share/Trash/files").as_path().to_string_lossy().to_string();
         folder_paths.desktop = PathBuf::from(format!(
             "{}/Desktop",
             std::env::var("HOME").unwrap()
@@ -201,7 +239,7 @@ fn get_contents(path: String) -> Vec<DriveItem> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file])
+        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file, create_file, create_folder])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

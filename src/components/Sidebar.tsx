@@ -1,4 +1,9 @@
-import { Drive, FolderPaths, PathContextType } from "@/lib/types";
+import {
+	Drive,
+	FolderPaths,
+	PathContextType,
+	QuickAccessItem,
+} from "@/lib/types";
 import { PathContext } from "@/lib/utils";
 import {
 	AppWindowIcon,
@@ -9,6 +14,7 @@ import {
 	FolderPlusIcon,
 	HardDriveIcon,
 	MusicIcon,
+	RecycleIcon,
 	RefreshCwIcon,
 	VideoIcon,
 } from "lucide-react";
@@ -25,7 +31,12 @@ export default function Sidebar({
 	folderPaths: FolderPaths | null;
 	updateContents: () => Promise<void>;
 }) {
-	const quickAccess = [
+	const quickAccess: QuickAccessItem[] = [
+		{
+			name: "Recycle Bin",
+			path: folderPaths?.trash,
+			icon: <RecycleIcon className="w-6 h-6 mr-2" />,
+		},
 		{
 			name: "Desktop",
 			path: folderPaths?.desktop,
@@ -65,7 +76,12 @@ export default function Sidebar({
 			</div>
 		);
 
-	const { setPath } = useContext(PathContext) as PathContextType;
+	const { path, setPath } = useContext(PathContext) as PathContextType;
+
+	function createFile(fileName: string) {
+		console.log(fileName);
+		console.log(path);
+	}
 
 	return (
 		<>

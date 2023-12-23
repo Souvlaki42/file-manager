@@ -18,12 +18,19 @@ export type Drive = {
 };
 
 export type FolderPaths = {
+	trash: string;
 	desktop: string;
 	downloads: string;
 	documents: string;
 	pictures: string;
 	music: string;
 	videos: string;
+};
+
+export type QuickAccessItem = {
+	name: string;
+	path?: string;
+	icon: JSX.Element;
 };
 
 export type PathContextType = {

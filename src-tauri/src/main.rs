@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
-use std::{fs, path::{PathBuf, Path}, os::windows::fs::MetadataExt};
+use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH};
 use sysinfo::{System, Disks};
 
 #[derive(Debug, serde::Serialize)]
@@ -22,9 +22,12 @@ enum DriveItemKind {
 #[derive(Debug, serde::Serialize)]
 struct DriveItem {
     name: String,
-    path: PathBuf,
+    path: String,
     kind: DriveItemKind,
     hidden: bool,
+    size: u64,
+    created: u128,
+    modified: u128
 }
 
 fn is_hidden(path: &Path) -> bool {
@@ -43,6 +46,82 @@ fn is_hidden(path: &Path) -> bool {
         let attributes = metadata.file_attributes();
         attributes & FILE_ATTRIBUTE_HIDDEN != 0
     }
+}
+
+#[derive(Debug, serde::Serialize)]
+struct FolderPaths {
+    desktop: String,
+    downloads: String,
+    documents: String,
+    pictures: String,
+    music: String,
+    videos: String,
+}
+
+#[tauri::command]
+fn get_folder_paths() -> FolderPaths {
+    let mut folder_paths = FolderPaths {
+        desktop: String::new(),
+        downloads: String::new(),
+        documents: String::new(),
+        pictures: String::new(),
+        music: String::new(),
+        videos: String::new(),
+    };
+
+    if cfg!(windows) {
+        folder_paths.desktop = PathBuf::from(format!(
+            "{}\\Desktop",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.downloads = PathBuf::from(format!(
+            "{}\\Downloads",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.documents = PathBuf::from(format!(
+            "{}\\Documents",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.pictures = PathBuf::from(format!(
+            "{}\\Pictures",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.music = PathBuf::from(format!(
+            "{}\\Music",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.videos = PathBuf::from(format!(
+            "{}\\Videos",
+            std::env::var("USERPROFILE").unwrap()
+        )).as_path().to_string_lossy().to_string();
+    } else {
+        folder_paths.desktop = PathBuf::from(format!(
+            "{}/Desktop",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.downloads = PathBuf::from(format!(
+            "{}/Downloads",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.documents = PathBuf::from(format!(
+            "{}/Documents",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.pictures = PathBuf::from(format!(
+            "{}/Pictures",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.music = PathBuf::from(format!(
+            "{}/Music",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+        folder_paths.videos = PathBuf::from(format!(
+            "{}/Videos",
+            std::env::var("HOME").unwrap()
+        )).as_path().to_string_lossy().to_string();
+    }
+
+    return folder_paths;
 }
 
 #[tauri::command]
@@ -68,22 +147,44 @@ fn get_volumes() -> Vec<Drive> {
 
 #[tauri::command]
 fn get_contents(path: String) -> Vec<DriveItem> {
-    let mut files: Vec<DriveItem> = Vec::new();
-    for file in fs::read_dir(path).unwrap() {
-        let file = file.unwrap();
-        let name = file.file_name().to_string_lossy().to_string();
-        let path = file.path().to_path_buf();
-        let kind = if path.is_dir() { DriveItemKind::Directory } else { DriveItemKind::File };
-        let hidden = is_hidden(path.as_path());
-        files.push(DriveItem { name, path, kind, hidden });
-    }
+    let mut drive_files: Vec<DriveItem> = Vec::new();
+    match fs::read_dir(&path) {
+        Ok(files) => {
+            for file in files {
+                match file {
+                    Ok(entry) => {
+                        let path_buf = entry.path().to_path_buf();
+                        let metadata = entry.metadata().unwrap();
+                        
+                        let name = entry.file_name().to_string_lossy().to_string();
+                        let path = entry.path().to_string_lossy().to_string();
+                        let kind = if path_buf.is_dir() { DriveItemKind::Directory } else { DriveItemKind::File };
+                        let hidden = is_hidden(path_buf.as_path());
 
-    return files;
+                        let size = metadata.len();
+                        let created = metadata.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_millis();
+                        let modified = metadata.modified().unwrap().duration_since(UNIX_EPOCH).unwrap().as_millis();
+
+                        drive_files.push(DriveItem { name, path, kind, hidden, size, created, modified });
+                    },
+                    Err(_) => {
+                        continue;
+                    }
+                }
+            }
+
+            return drive_files;
+        },
+        Err(error) => {
+            eprintln!("Error reading directory: {:?}", error);
+            return Vec::new();
+        }
+    }
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents])
+        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

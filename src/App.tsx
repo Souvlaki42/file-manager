@@ -1,51 +1,59 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
-import Drives from "./components/Drives";
-
-export type Drive = {
-	name: string;
-	letter: string;
-	total_capacity: number;
-	available_capacity: number;
-};
-
-enum DriveItemKind {
-	Directory,
-	File,
-}
-
-type DriveItem = {
-	name: string;
-	path: unknown;
-	kind: DriveItemKind;
-	hidden: boolean;
-};
+import FileExplorer from "./components/FileExplorer";
+import { Drive, DriveItem, FolderPaths } from "./lib/types";
 
 function App() {
 	const [drives, setDrives] = useState<Drive[]>([]);
 	const [contents, setContents] = useState<DriveItem[]>([]);
-	const [weAreInHomepage, setWeAreInHomepage] = useState<boolean>(true);
+	const [path, setPath] = useState<string[]>(["C:\\"]);
+	const [pathIndex, setPathIndex] = useState<number>(0);
+	const [folderPaths, setFolderPaths] = useState<FolderPaths | null>(null);
 
-	async function get_contents(path: string): Promise<DriveItem[]> {
-		setWeAreInHomepage(false);
-		const contents = await invoke<DriveItem[]>("get_contents", { path });
-		console.log(contents);
-		return contents;
+	function backendAccessEnabled() {
+		return typeof window.__TAURI_IPC__ === "function";
 	}
 
 	useEffect(() => {
 		(async () => {
 			setDrives(await invoke<Drive[]>("get_volumes"));
+			setFolderPaths(await invoke<FolderPaths>("get_folder_paths"));
 		})();
 	}, []);
 
+	useEffect(() => {
+		setPathIndex(path.length - 1);
+	}, [path]);
+
+	useEffect(() => {
+		(async () => {
+			const newContents = await invoke<DriveItem[]>("get_contents", {
+				path: path[pathIndex],
+			});
+			setContents(newContents);
+		})();
+	}, [pathIndex]);
+
 	return (
-		<div className="container">
-			<h1>File Manager</h1>
-			{weAreInHomepage && drives.length === 0 && <p>No drives found...</p>}
-			{!weAreInHomepage && contents.length === 0 && <p>No files found...</p>}
-			{weAreInHomepage && drives.length !== 0 && <Drives drives={drives} />}
-		</div>
+		<>
+			{backendAccessEnabled() && (
+				<FileExplorer
+					drives={drives}
+					pathState={[path, setPath]}
+					pathIndexState={[pathIndex, setPathIndex]}
+					contents={contents}
+					folderPaths={folderPaths}
+				/>
+			)}
+			{!backendAccessEnabled() && (
+				<div className="grid text-center">
+					<p>
+						This website cannot work without its Tauri backend. Try using the
+						app instead.
+					</p>
+				</div>
+			)}
+		</>
 	);
 }
 

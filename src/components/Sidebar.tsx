@@ -76,12 +76,8 @@ export default function Sidebar({
 			</div>
 		);
 
-	const { path, setPath } = useContext(PathContext) as PathContextType;
-
-	function createFile(fileName: string) {
-		console.log(fileName);
-		console.log(path);
-	}
+	const { setPath, setTemplate, setContentsChangeName, path, pathIndex } =
+		useContext(PathContext) as PathContextType;
 
 	return (
 		<>
@@ -92,6 +88,18 @@ export default function Sidebar({
 						title="New File"
 						className="h-10 p-3 mr-2 select-none"
 						variant="outline"
+						onClick={() => {
+							setContentsChangeName("New File");
+							setTemplate({
+								created: new Date(),
+								modified: new Date(),
+								hidden: false,
+								kind: "File",
+								name: "New File",
+								path: path[pathIndex],
+								size: 1,
+							});
+						}}
 					>
 						<FilePlusIcon className="w-4 h-4" />
 						<span className="sr-only">New File</span>
@@ -100,6 +108,18 @@ export default function Sidebar({
 						title="New Folder"
 						className="h-10 p-3 mr-2 select-none"
 						variant="outline"
+						onClick={() => {
+							setContentsChangeName("New Directory");
+							setTemplate({
+								created: new Date(),
+								modified: new Date(),
+								hidden: false,
+								kind: "Directory",
+								name: "New Directory",
+								path: path[pathIndex],
+								size: 1,
+							});
+						}}
 					>
 						<FolderPlusIcon className="w-4 h-4" />
 						<span className="sr-only">New Folder</span>

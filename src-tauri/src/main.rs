@@ -27,7 +27,7 @@ struct DriveItem {
     hidden: bool,
     size: u64,
     created: u128,
-    modified: u128
+    modified: u128,
 }
 
 fn is_hidden(path: &Path) -> bool {

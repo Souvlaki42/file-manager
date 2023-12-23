@@ -38,4 +38,10 @@ export type PathContextType = {
 	setPath: React.Dispatch<React.SetStateAction<string[]>>;
 	pathIndex: number;
 	setPathIndex: React.Dispatch<React.SetStateAction<number>>;
+	contents: DriveItem[];
+	setContents: React.Dispatch<React.SetStateAction<DriveItem[]>>;
+	contentsChangeName: string;
+	setContentsChangeName: React.Dispatch<React.SetStateAction<string>>;
+	template?: DriveItem;
+	setTemplate: React.Dispatch<React.SetStateAction<DriveItem | undefined>>;
 };

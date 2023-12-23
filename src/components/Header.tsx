@@ -1,5 +1,5 @@
 import { PathContextType } from "@/lib/types";
-import { PathContext, hasPreviousPath } from "@/lib/utils";
+import { PathContext, countOccurrences, hasPreviousPath } from "@/lib/utils";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -75,7 +75,12 @@ export default function Header() {
 							setPath((oldPath) => {
 								const splitted_array = oldPath[pathIndex].split("\\");
 								splitted_array.pop();
-								return [...oldPath, splitted_array.join("\\")];
+								return [
+									...oldPath,
+									countOccurrences(splitted_array.join("\\"), "\\") === 0
+										? splitted_array.join("\\") + "\\"
+										: splitted_array.join("\\"),
+								];
 							})
 						}
 					>

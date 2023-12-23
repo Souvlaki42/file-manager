@@ -11,6 +11,9 @@ function App() {
 	const [pathIndex, setPathIndex] = useState<number>(0);
 	const [folderPaths, setFolderPaths] = useState<FolderPaths | null>(null);
 
+	const [contentsChangeName, setContentsChangeName] = useState<string>("");
+	const [template, setTemplate] = useState<DriveItem | undefined>(undefined);
+
 	function backendAccessEnabled() {
 		return typeof window.__TAURI_IPC__ === "function";
 	}
@@ -41,11 +44,23 @@ function App() {
 
 	return (
 		<>
-			<PathContext.Provider value={{ path, setPath, pathIndex, setPathIndex }}>
+			<PathContext.Provider
+				value={{
+					path,
+					setPath,
+					pathIndex,
+					setPathIndex,
+					contents,
+					setContents,
+					contentsChangeName,
+					setContentsChangeName,
+					template,
+					setTemplate,
+				}}
+			>
 				{backendAccessEnabled() && (
 					<FileExplorer
 						drives={drives}
-						contents={contents}
 						folderPaths={folderPaths}
 						updateContents={updateContents}
 					/>

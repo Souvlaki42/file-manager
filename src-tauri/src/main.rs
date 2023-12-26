@@ -9,8 +9,8 @@ use sysinfo::{System, Disks};
 struct Drive {
     name: String,
     letter: char,
-    total_capacity: u64,
-    available_capacity: u64,
+    total: u64,
+    available: u64,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -191,10 +191,10 @@ fn get_volumes() -> Vec<Drive> {
         let raw_name = disk.name().to_string_lossy().trim().to_string();
         let name = if raw_name.is_empty() { "Local Disk".to_string() } else { raw_name };
         let letter = disk.mount_point().to_string_lossy().to_string().replace(":\\", "").chars().next().unwrap();
-        let total_capacity = disk.total_space();
-        let available_capacity = disk.available_space();
+        let total = disk.total_space();
+        let available = disk.available_space();
 
-        drives.push(Drive { name, letter, total_capacity, available_capacity });
+        drives.push(Drive { name, letter, total, available });
     }
 
     return drives;

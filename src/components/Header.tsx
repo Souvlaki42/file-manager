@@ -1,5 +1,4 @@
-import { PathContextType } from "@/lib/types";
-import { PathContext, countOccurrences, hasPreviousPath } from "@/lib/utils";
+import { countOccurrences, hasPreviousPath } from "@/lib/utils";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -7,7 +6,8 @@ import {
 	FolderIcon,
 	SearchIcon,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { state, useAtom } from "./../lib/state";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -19,18 +19,9 @@ import {
 } from "./ui/select";
 
 export default function Header() {
-	if (PathContext == null)
-		return (
-			<div className="grid text-center">
-				<p>Something went wrong. Try again later.</p>
-			</div>
-		);
-
-	const { pathIndex, setPathIndex, path, setPath } = useContext(
-		PathContext
-	) as PathContextType;
-
-	const [pathInput, setPathInput] = useState<string>(path[path.length - 1]);
+	const [pathInput, setPathInput] = useAtom(state.pathInputState);
+	const [pathIndex, setPathIndex] = useAtom(state.pathIndexState);
+	const [path, setPath] = useAtom(state.pathState);
 
 	useEffect(() => {
 		setPathInput(path[pathIndex]);

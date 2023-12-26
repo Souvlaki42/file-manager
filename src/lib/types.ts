@@ -13,8 +13,8 @@ export type DriveItem = {
 export type Drive = {
 	name: string;
 	letter: string;
-	total_capacity: number;
-	available_capacity: number;
+	total: number;
+	available: number;
 };
 
 export type FolderPaths = {
@@ -31,17 +31,4 @@ export type QuickAccessItem = {
 	name: string;
 	path?: string;
 	icon: JSX.Element;
-};
-
-export type PathContextType = {
-	path: string[];
-	setPath: React.Dispatch<React.SetStateAction<string[]>>;
-	pathIndex: number;
-	setPathIndex: React.Dispatch<React.SetStateAction<number>>;
-	contents: DriveItem[];
-	setContents: React.Dispatch<React.SetStateAction<DriveItem[]>>;
-	contentsChangeName: string;
-	setContentsChangeName: React.Dispatch<React.SetStateAction<string>>;
-	template?: DriveItem;
-	setTemplate: React.Dispatch<React.SetStateAction<DriveItem | undefined>>;
 };

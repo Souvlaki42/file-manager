@@ -1,8 +1,8 @@
-import { PathContextType } from "@/lib/types";
-import { PathContext } from "@/lib/utils";
+import { createFile, createFolder, getContents } from "@/lib/api";
+import { formatBytesDynamically } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/tauri";
 import { FileIcon, FolderIcon } from "lucide-react";
-import { useContext } from "react";
+import { state, useAtom } from "../lib/state";
 import { Input } from "./ui/input";
 import {
 	Table,
@@ -13,69 +13,14 @@ import {
 	TableRow,
 } from "./ui/table";
 
-export default function Contents({
-	updateContents,
-}: {
-	updateContents: () => Promise<void>;
-}) {
-	function formatBytesDynamically(bytes: number): string {
-		const kilobyte = 1024;
-		const megabyte = kilobyte * 1024;
-		const gigabyte = megabyte * 1024;
-
-		if (bytes < kilobyte) {
-			return `${bytes} B`;
-		} else if (bytes < megabyte) {
-			return `${(bytes / kilobyte).toFixed(2)} KB`;
-		} else if (bytes < gigabyte) {
-			return `${(bytes / megabyte).toFixed(2)} MB`;
-		} else {
-			return `${(bytes / gigabyte).toFixed(2)} GB`;
-		}
-	}
-
-	if (PathContext == null)
-		return (
-			<div className="grid text-center">
-				<p>Something went wrong. Try again later.</p>
-			</div>
-		);
-
-	const {
-		path,
-		setPath,
-		contents,
-		contentsChangeName,
-		setContentsChangeName,
-		template,
-		setTemplate,
-		pathIndex,
-	} = useContext(PathContext) as PathContextType;
-
-	async function createFile(fileName: string) {
-		const newPath =
-			path[pathIndex][path[pathIndex].length - 1] === "\\"
-				? path[pathIndex]
-				: path[pathIndex] + "\\";
-		await invoke("create_file", {
-			filePath: newPath + fileName.replace(" ", ""),
-		});
-		setTemplate(undefined);
-		await updateContents();
-	}
-
-	async function createFolder(folder_name: string) {
-		const newPath =
-			path[pathIndex][path[pathIndex].length - 1] === "\\"
-				? path[pathIndex]
-				: path[pathIndex] + "\\";
-		await invoke("create_folder", {
-			folderPath: newPath + folder_name.replace(" ", ""),
-		});
-		setTemplate(undefined);
-		await updateContents();
-	}
-
+export default function Contents() {
+	const [driveItemTemplate, setDriveItemTemplate] = useAtom(
+		state.driveItemTemplateState
+	);
+	const [nameInput, setNameInput] = useAtom(state.nameInputState);
+	const [content, setContent] = useAtom(state.contentState);
+	const [path, setPath] = useAtom(state.pathState);
+	const [pathIndex, _setPathIndex] = useAtom(state.pathIndexState);
 	return (
 		<>
 			<Table>
@@ -88,49 +33,68 @@ export default function Contents({
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{template && (
-						<TableRow key={template.path}>
+					{driveItemTemplate && (
+						<TableRow key={driveItemTemplate.path}>
 							<TableCell className="flex flex-row items-center hover:cursor-pointer">
-								{template.kind === "Directory" && (
+								{driveItemTemplate.kind === "Directory" && (
 									<FolderIcon className="w-6 h-6 mr-2" />
 								)}
-								{template.kind === "File" && (
+								{driveItemTemplate.kind === "File" && (
 									<FileIcon className="w-6 h-6 mr-2" />
 								)}
 								<Input
 									onKeyDown={async (e) => {
-										if (e.key === "Enter" && template.kind === "File")
-											await createFile(contentsChangeName);
-
-										if (e.key === "Enter" && template.kind === "Directory")
-											await createFolder(contentsChangeName);
+										if (
+											e.key === "Enter" &&
+											driveItemTemplate.kind === "File"
+										) {
+											await createFile(nameInput, path[pathIndex]);
+											setDriveItemTemplate(undefined);
+											setContent(await getContents(path[pathIndex]));
+										}
+										if (
+											e.key === "Enter" &&
+											driveItemTemplate.kind === "Directory"
+										) {
+											await createFolder(nameInput, path[pathIndex]);
+											setDriveItemTemplate(undefined);
+											setContent(await getContents(path[pathIndex]));
+										}
 									}}
-									onChange={(e) => setContentsChangeName(e.target.value)}
-									value={contentsChangeName}
+									onChange={(e) => setNameInput(e.target.value)}
+									value={nameInput}
 									className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
-									placeholder={template.name}
+									placeholder={driveItemTemplate.name}
 									type="text"
 								/>
 							</TableCell>
 							<TableCell className="pl-2">
-								<time dateTime={new Date(template.created).toLocaleString()}>
-									{new Date(template.created).toLocaleString()}
+								<time
+									dateTime={new Date(
+										driveItemTemplate.created
+									).toLocaleString()}
+								>
+									{new Date(driveItemTemplate.created).toLocaleString()}
 								</time>
 							</TableCell>
 							<TableCell className="pl-2">
-								<time dateTime={new Date(template.modified).toLocaleString()}>
-									{new Date(template.modified).toLocaleString()}
+								<time
+									dateTime={new Date(
+										driveItemTemplate.modified
+									).toLocaleString()}
+								>
+									{new Date(driveItemTemplate.modified).toLocaleString()}
 								</time>
 							</TableCell>
 							<TableCell>
-								{template.kind === "File"
-									? formatBytesDynamically(template.size)
+								{driveItemTemplate.kind === "File"
+									? formatBytesDynamically(driveItemTemplate.size)
 									: "-"}
 							</TableCell>
 						</TableRow>
 					)}
-					{contents.length !== 0 &&
-						contents.map((it) => {
+					{content.length !== 0 &&
+						content.map((it) => {
 							return (
 								<TableRow key={it.path}>
 									<TableCell
@@ -171,7 +135,7 @@ export default function Contents({
 								</TableRow>
 							);
 						})}
-					{contents.length === 0 && (
+					{content.length === 0 && (
 						<TableRow>
 							<TableCell colSpan={4}>
 								This directory either has no contents or it doesn't exist.

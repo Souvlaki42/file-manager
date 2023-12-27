@@ -1,7 +1,11 @@
 import type { ItemParams } from "react-contexify";
 
 export type DriveItemKind = "Directory" | "File";
-export type DriveItemContextMenuAction = "OPENWITH" | "RENAME" | "DELETE";
+export type DriveItemContextMenuAction =
+	| "OPENWITH"
+	| "COPYPATH"
+	| "RENAME"
+	| "DELETE";
 
 export type DriveItem = {
 	name: string;

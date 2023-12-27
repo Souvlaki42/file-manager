@@ -58,6 +58,16 @@ export default function Contents() {
 						},
 					},
 					{
+						label: "Copy Path",
+						actionId: "COPYPATH",
+						props: { driveItem: selectedDriveItem },
+						onClick: async (args) => {
+							const it = args.props?.driveItem;
+							if (!it) return;
+							navigator.clipboard.writeText(it.path);
+						},
+					},
+					{
 						label: "Rename",
 						actionId: "RENAME",
 						props: { driveItem: selectedDriveItem },

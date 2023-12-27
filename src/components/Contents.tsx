@@ -1,8 +1,18 @@
-import { createFile, createFolder, getContents } from "@/lib/api";
-import { formatBytesDynamically } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/tauri";
+import {
+	createFile,
+	createFolder,
+	deleteFile,
+	deleteFolder,
+	getContents,
+	openFile,
+	renameItem,
+} from "@/lib/api";
+import { DriveItem, DriveItemContextMenuAction } from "@/lib/types";
+import { cn, formatBytesDynamically } from "@/lib/utils";
 import { FileIcon, FolderIcon } from "lucide-react";
+import { Fragment } from "react";
 import { state, useAtom } from "../lib/state";
+import ContextMenu, { useContextMenu } from "./ContextMenu";
 import { Input } from "./ui/input";
 import {
 	Table,
@@ -14,15 +24,66 @@ import {
 } from "./ui/table";
 
 export default function Contents() {
+	const { show: showDriveItemContextMenu } = useContextMenu({
+		id: "driveItemContextMenu",
+	});
+
 	const [driveItemTemplate, setDriveItemTemplate] = useAtom(
 		state.driveItemTemplateState
+	);
+	const [selectedDriveItem, setSelectedDriveItem] = useAtom(
+		state.selectedDriveItemState
+	);
+	const [editableDriveItem, setEditableDriveItem] = useAtom(
+		state.editableDriveItemState
 	);
 	const [nameInput, setNameInput] = useAtom(state.nameInputState);
 	const [content, setContent] = useAtom(state.contentState);
 	const [path, setPath] = useAtom(state.pathState);
 	const [pathIndex, _setPathIndex] = useAtom(state.pathIndexState);
+
 	return (
 		<>
+			<ContextMenu<DriveItemContextMenuAction, { driveItem?: DriveItem }>
+				menu_id="driveItemContextMenu"
+				items={[
+					{
+						label: "Open With",
+						actionId: "OPENWITH",
+						props: { driveItem: selectedDriveItem },
+						onClick: async (args) => {
+							const it = args.props?.driveItem;
+							if (!it) return;
+							await openFile(it.path, true);
+						},
+					},
+					{
+						label: "Rename",
+						actionId: "RENAME",
+						props: { driveItem: selectedDriveItem },
+						onClick: async (args) => {
+							const it = args.props?.driveItem;
+							if (!it) return;
+							setNameInput(it.name);
+							setEditableDriveItem(it);
+						},
+					},
+					{
+						label: "Delete",
+						actionId: "DELETE",
+						props: { driveItem: selectedDriveItem },
+						onClick: async (args) => {
+							const it = args.props?.driveItem;
+							if (!it) return;
+							if (it.kind === "File")
+								await deleteFile(it.name, path[pathIndex]);
+							if (it.kind === "Directory")
+								await deleteFolder(it.name, path[pathIndex]);
+							setContent(await getContents(path[pathIndex]));
+						},
+					},
+				]}
+			/>
 			<Table>
 				<TableHeader className="select-none">
 					<TableRow>
@@ -96,43 +157,74 @@ export default function Contents() {
 					{content.length !== 0 &&
 						content.map((it) => {
 							return (
-								<TableRow key={it.path}>
-									<TableCell
-										className="flex flex-row items-center hover:cursor-pointer"
-										onClick={
-											it.kind === "Directory"
-												? () => setPath((oldPath) => [...oldPath, it.path])
-												: it.kind === "File"
-												? async () =>
-														await invoke("open_file", {
-															filePath: it.path,
-															openWith: true,
-														})
-												: () => {}
-										}
+								<Fragment key={`fragment-${it.path}`}>
+									<TableRow
+										key={`item-${it.path}`}
+										className={cn(it.hidden ? "opacity-50" : "opacity-100")}
 									>
-										{it.kind === "Directory" && (
-											<FolderIcon className="w-6 h-6 mr-2" />
-										)}
-										{it.kind === "File" && (
-											<FileIcon className="w-6 h-6 mr-2" />
-										)}
-										{it.name}
-									</TableCell>
-									<TableCell className="pl-2">
-										<time dateTime={new Date(it.created).toLocaleString()}>
-											{new Date(it.created).toLocaleString()}
-										</time>
-									</TableCell>
-									<TableCell className="pl-2">
-										<time dateTime={new Date(it.modified).toLocaleString()}>
-											{new Date(it.modified).toLocaleString()}
-										</time>
-									</TableCell>
-									<TableCell>
-										{it.kind === "File" ? formatBytesDynamically(it.size) : "-"}
-									</TableCell>
-								</TableRow>
+										<TableCell
+											className="flex flex-row items-center hover:cursor-pointer"
+											onContextMenu={(event) => {
+												setSelectedDriveItem(it);
+												showDriveItemContextMenu({ event });
+											}}
+											onClick={
+												editableDriveItem !== it && it.kind === "Directory"
+													? () => setPath((oldPath) => [...oldPath, it.path])
+													: editableDriveItem !== it && it.kind === "File"
+													? async () => await openFile(it.path, false)
+													: () => {}
+											}
+										>
+											{it.kind === "Directory" && (
+												<FolderIcon className="w-6 h-6 mr-2" />
+											)}
+											{it.kind === "File" && (
+												<FileIcon className="w-6 h-6 mr-2" />
+											)}
+											{editableDriveItem === it ? (
+												<Input
+													onKeyDown={async (e) => {
+														if (e.key === "Enter") {
+															const currentPath = path[pathIndex];
+															const newPath = currentPath.endsWith("\\")
+																? currentPath.slice(0, -1)
+																: currentPath;
+															await renameItem(
+																newPath + "\\" + editableDriveItem.name,
+																nameInput
+															);
+															setEditableDriveItem(undefined);
+															setContent(await getContents(path[pathIndex]));
+														}
+													}}
+													onChange={(e) => setNameInput(e.target.value)}
+													value={nameInput}
+													className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
+													placeholder={editableDriveItem.name}
+													type="text"
+												/>
+											) : (
+												it.name
+											)}
+										</TableCell>
+										<TableCell className="pl-2">
+											<time dateTime={new Date(it.created).toLocaleString()}>
+												{new Date(it.created).toLocaleString()}
+											</time>
+										</TableCell>
+										<TableCell className="pl-2">
+											<time dateTime={new Date(it.modified).toLocaleString()}>
+												{new Date(it.modified).toLocaleString()}
+											</time>
+										</TableCell>
+										<TableCell>
+											{it.kind === "File"
+												? formatBytesDynamically(it.size)
+												: "-"}
+										</TableCell>
+									</TableRow>
+								</Fragment>
 							);
 						})}
 					{content.length === 0 && (

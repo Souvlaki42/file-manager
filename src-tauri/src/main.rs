@@ -96,14 +96,65 @@ fn create_file(file_path: String) -> Result<(), String> {
 #[tauri::command]
 fn create_folder(folder_path: String) -> Result<(), String> {
     match Command::new("cmd")
-        .args(&["/C", "mkdir", folder_path.as_str()])
-        .status()
+    .args(&["/C", "mkdir", folder_path.as_str()])
+    .status()
     {
         Ok(status) => {
             if status.success() {
                 Ok(())
             } else {
                 Err(format!("Failed to create the folder: {}", folder_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
+}
+
+#[tauri::command]
+fn delete_file(file_path: String) -> Result<(), String> {
+    match Command::new("cmd")
+        .args(&["/C", "del", "/f", file_path.as_str()])
+        .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to delete the file: {}", file_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
+}
+
+#[tauri::command]
+fn delete_folder(folder_path: String) -> Result<(), String> {
+    match Command::new("cmd")
+    .args(&["/C", "rmdir", "/s", "/q", folder_path.as_str()])
+    .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to delete the folder: {}", folder_path))
+            }
+        }
+        Err(e) => Err(format!("Error executing command: {}", e)),
+    }
+}
+
+#[tauri::command]
+fn rename_item(old_path: String, new_name: String) -> Result<(), String> {
+    match Command::new("cmd")
+        .args(&["/C", "ren", &old_path, &new_name])
+        .status()
+    {
+        Ok(status) => {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("Failed to rename the item: {} to {}", old_path, new_name))
             }
         }
         Err(e) => Err(format!("Error executing command: {}", e)),
@@ -175,7 +226,6 @@ fn get_folder_paths() -> FolderPaths {
             std::env::var("HOME").unwrap()
         )).as_path().to_string_lossy().to_string();
     }
-
     return folder_paths;
 }
 
@@ -239,7 +289,7 @@ fn get_contents(path: String) -> Vec<DriveItem> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file, create_file, create_folder])
+        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file, create_file, create_folder, delete_file, delete_folder, rename_item])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

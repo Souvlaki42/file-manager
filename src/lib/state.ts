@@ -10,6 +10,8 @@ const folderPathState = atom<FolderPaths | undefined>(undefined);
 const pathInputState = atom<string>("");
 const nameInputState = atom<string>("");
 const driveItemTemplateState = atom<DriveItem | undefined>(undefined);
+const selectedDriveItemState = atom<DriveItem | undefined>(undefined);
+const editableDriveItemState = atom<DriveItem | undefined>(undefined);
 
 export const state = {
 	driveState,
@@ -20,4 +22,6 @@ export const state = {
 	pathInputState,
 	nameInputState,
 	driveItemTemplateState,
+	selectedDriveItemState,
+	editableDriveItemState,
 };

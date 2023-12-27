@@ -17,6 +17,12 @@
 				"open": true
 			}
 		},
+		"systemTray": {
+			"iconPath": "icons/icon.png",
+			"iconAsTemplate": true,
+			"title": "File Manager",
+			"menuOnLeftClick": true
+		},
 		"bundle": {
 			"active": true,
 			"targets": "all",

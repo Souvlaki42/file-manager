@@ -20,11 +20,18 @@ export const createFile = async (
 	fileName: string,
 	currentPath: string
 ): Promise<void> => {
-	const newPath =
-		currentPath[currentPath.length - 1] === "\\"
-			? currentPath
-			: currentPath + "\\";
+	const newPath = currentPath.endsWith("\\") ? currentPath : currentPath + "\\";
 	await invoke<void>("create_file", {
+		filePath: newPath + fileName.replace(" ", ""),
+	});
+};
+
+export const deleteFile = async (
+	fileName: string,
+	currentPath: string
+): Promise<void> => {
+	const newPath = currentPath.endsWith("\\") ? currentPath : currentPath + "\\";
+	await invoke<void>("delete_file", {
 		filePath: newPath + fileName.replace(" ", ""),
 	});
 };
@@ -33,15 +40,26 @@ export const createFolder = async (
 	folderName: string,
 	currentPath: string
 ): Promise<void> => {
-	const newPath =
-		currentPath[currentPath.length - 1] === "\\"
-			? currentPath
-			: currentPath + "\\";
+	const newPath = currentPath.endsWith("\\") ? currentPath : currentPath + "\\";
 	await invoke<void>("create_folder", {
 		folderPath: newPath + folderName.replace(" ", ""),
 	});
 };
 
+export const deleteFolder = async (
+	folderName: string,
+	currentPath: string
+): Promise<void> => {
+	const newPath = currentPath.endsWith("\\") ? currentPath : currentPath + "\\";
+	await invoke<void>("delete_folder", {
+		folderPath: newPath + folderName.replace(" ", ""),
+	});
+};
+
 export const openFile = async (filePath: string, openWith: boolean = false) => {
-	await invoke<void>("open_file", { filePath, openWith });
+	await invoke<void>("open_file", { filePath: filePath, openWith });
+};
+
+export const renameItem = async (oldPath: string, newName: string) => {
+	await invoke<void>("rename_item", { oldPath, newName });
 };

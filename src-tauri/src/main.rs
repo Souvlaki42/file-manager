@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
-use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH, process::Command};
+use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH, process::Command, io::ErrorKind};
 use sysinfo::{System, Disks};
 
 #[derive(Debug, serde::Serialize)]
@@ -13,13 +13,13 @@ struct Drive {
     available: u64,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, PartialEq, Clone, Copy)]
 enum DriveItemKind {
     Directory,
     File
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, PartialEq)]
 struct DriveItem {
     name: String,
     path: String,
@@ -251,40 +251,79 @@ fn get_volumes() -> Vec<Drive> {
 }
 
 #[tauri::command]
-fn get_contents(path: String) -> Vec<DriveItem> {
-    let mut drive_files: Vec<DriveItem> = Vec::new();
-    match fs::read_dir(&path) {
-        Ok(files) => {
-            for file in files {
-                match file {
-                    Ok(entry) => {
-                        let path_buf = entry.path().to_path_buf();
-                        let metadata = entry.metadata().unwrap();
-                        
-                        let name = entry.file_name().to_string_lossy().to_string();
-                        let path = entry.path().to_string_lossy().to_string();
-                        let kind = if path_buf.is_dir() { DriveItemKind::Directory } else { DriveItemKind::File };
-                        let hidden = is_hidden(path_buf.as_path());
+fn get_contents(directory_path: String, recursive: bool) -> Vec<DriveItem> {
+    let mut drive_contents: Vec<DriveItem> = Vec::new();
+    let mut stack: Vec<String> = Vec::new();
 
-                        let size = metadata.len();
-                        let created = metadata.created().unwrap().duration_since(UNIX_EPOCH).unwrap().as_millis();
-                        let modified = metadata.modified().unwrap().duration_since(UNIX_EPOCH).unwrap().as_millis();
+    stack.push(directory_path.clone());
 
-                        drive_files.push(DriveItem { name, path, kind, hidden, size, created, modified });
-                    },
-                    Err(_) => {
-                        continue;
+    while let Some(current_path) = stack.pop() {
+        match fs::read_dir(&current_path) {
+            Ok(files) => {
+                for file in files {
+                    match file {
+                        Ok(entry) => {
+                            let path_buf = entry.path().to_path_buf();
+                            let metadata = entry.metadata().unwrap();
+
+                            let name = entry.file_name().to_string_lossy().to_string();
+                            let path = entry.path().to_string_lossy().to_string();
+                            let kind = if path_buf.is_dir() {
+                                DriveItemKind::Directory
+                            } else {
+                                DriveItemKind::File
+                            };
+                            let hidden = is_hidden(path_buf.as_path());
+
+                            let size = metadata.len();
+                            let created = metadata
+                                .created()
+                                .unwrap()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis();
+                            let modified = metadata
+                                .modified()
+                                .unwrap()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis();
+
+                            drive_contents.push(DriveItem {
+                                name,
+                                path: path.clone(),
+                                kind,
+                                hidden,
+                                size,
+                                created,
+                                modified,
+                            });
+
+                            if recursive && kind == DriveItemKind::Directory {
+                                stack.push(path);
+                            }
+                        }
+                        Err(_) => {
+                            continue;
+                        }
                     }
                 }
             }
-
-            return drive_files;
-        },
-        Err(error) => {
-            eprintln!("Error reading directory: {:?}", error);
-            return Vec::new();
+            Err(error) => {
+                match error.kind() {
+                    ErrorKind::PermissionDenied => {
+                        eprintln!("Permission denied on directory: {}", &directory_path)
+                    }
+                    _ => {
+                        eprintln!("Error reading directory: {:?}", error);
+                    }
+                }
+                return Vec::new();
+            }
         }
     }
+
+    drive_contents
 }
 
 fn main() {

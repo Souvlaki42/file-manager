@@ -1,3 +1,4 @@
+import { SearchFilter } from "@/lib/types";
 import { countOccurrences, hasPreviousPath } from "@/lib/utils";
 import {
 	ArrowLeftIcon,
@@ -22,6 +23,8 @@ export default function Header() {
 	const [pathInput, setPathInput] = useAtom(state.pathInputState);
 	const [pathIndex, setPathIndex] = useAtom(state.pathIndexState);
 	const [path, setPath] = useAtom(state.pathState);
+	const [searchInput, setSearchInput] = useAtom(state.searchInputState);
+	const [searchFilter, setSearchFilter] = useAtom(state.searchFilterState);
 
 	useEffect(() => {
 		setPathInput(path[pathIndex]);
@@ -82,7 +85,7 @@ export default function Header() {
 						<FolderIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
 						<Input
 							onKeyDown={(e) => {
-								if (e.key === "Enter")
+								if (e.key === "Enter" && !!pathInput)
 									setPath((oldPath) => [...oldPath, pathInput]);
 							}}
 							onChange={(e) => setPathInput(e.target.value)}
@@ -97,12 +100,20 @@ export default function Header() {
 					<div className="relative w-full">
 						<SearchIcon className="absolute left-2.5 top-3 h-4 w-4 text-gray-500" />
 						<Input
+							onChange={(e) => {
+								setSearchInput(e.target.value);
+							}}
+							value={searchInput}
 							className="w-full pl-8 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500"
 							placeholder={`Search ${path[pathIndex]}`}
 							type="search"
 						/>
 					</div>
-					<Select defaultValue="all">
+					<Select
+						defaultValue="all"
+						value={searchFilter}
+						onValueChange={(value) => setSearchFilter(value as SearchFilter)}
+					>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder="Search Filter" />
 						</SelectTrigger>

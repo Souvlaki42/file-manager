@@ -9,6 +9,7 @@ export default function App() {
 	const [_folderPaths, setFolderPaths] = useAtom(state.folderPathState);
 	const [_drives, setDrives] = useAtom(state.driveState);
 	const [_content, setContent] = useAtom(state.contentState);
+	const [searchInput, _setSearchInput] = useAtom(state.searchInputState);
 
 	useEffect(() => {
 		(async () => {
@@ -25,10 +26,10 @@ export default function App() {
 
 	useEffect(() => {
 		(async () => {
-			const newContents = await getContents(path[pathIndex]);
+			const newContents = await getContents(path[pathIndex], !!searchInput);
 			setContent(newContents);
 		})();
-	}, [pathIndex]);
+	}, [pathIndex, searchInput]);
 
 	if (typeof window.__TAURI_IPC__ === "function") return <FileExplorer />;
 	else

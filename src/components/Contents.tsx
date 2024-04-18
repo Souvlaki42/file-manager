@@ -10,7 +10,7 @@ import {
 import { DriveItem, DriveItemContextMenuAction } from "@/lib/types";
 import { cn, formatBytesDynamically } from "@/lib/utils";
 import { FileIcon, FolderIcon } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { state, useAtom } from "../lib/state";
 import ContextMenu, { useContextMenu } from "./ContextMenu";
 import { Input } from "./ui/input";
@@ -41,6 +41,21 @@ export default function Contents() {
 	const [content, setContent] = useAtom(state.contentState);
 	const [path, setPath] = useAtom(state.pathState);
 	const [pathIndex, _setPathIndex] = useAtom(state.pathIndexState);
+	const [searchInput, _setSearchInput] = useAtom(state.searchInputState);
+	const [searchFilter, _setSearchFilter] = useAtom(state.searchFilterState);
+
+	const filteredContent = useMemo(() => {
+		console.log(content);
+		return content.filter(
+			(item) =>
+				item.name.toLowerCase().includes(searchInput.toLowerCase()) &&
+				(searchFilter === "files"
+					? item.kind === "File"
+					: searchFilter === "directories"
+					? item.kind === "Directory"
+					: true)
+		);
+	}, [searchInput, searchFilter, content]);
 
 	return (
 		<>
@@ -164,8 +179,8 @@ export default function Contents() {
 							</TableCell>
 						</TableRow>
 					)}
-					{content.length !== 0 &&
-						content.map((it) => {
+					{filteredContent.length !== 0 &&
+						filteredContent.map((it) => {
 							return (
 								<Fragment key={`fragment-${it.path}`}>
 									<TableRow
@@ -237,7 +252,7 @@ export default function Contents() {
 								</Fragment>
 							);
 						})}
-					{content.length === 0 && (
+					{filteredContent.length === 0 && (
 						<TableRow>
 							<TableCell colSpan={4}>
 								This directory either has no contents or it doesn't exist.

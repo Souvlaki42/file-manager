@@ -11,8 +11,14 @@ export const getVolumes = async (): Promise<Drive[]> => {
 	return data;
 };
 
-export const getContents = async (path: string): Promise<DriveItem[]> => {
-	const data = await invoke<DriveItem[]>("get_contents", { path });
+export const getContents = async (
+	directoryPath: string,
+	recursive: boolean = false
+): Promise<DriveItem[]> => {
+	const data = await invoke<DriveItem[]>("get_contents", {
+		directoryPath,
+		recursive,
+	});
 	return data;
 };
 

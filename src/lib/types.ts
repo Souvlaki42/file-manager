@@ -1,6 +1,7 @@
 import type { ItemParams } from "react-contexify";
 
 export type DriveItemKind = "Directory" | "File";
+export type SearchFilter = "all" | "files" | "directories";
 export type DriveItemContextMenuAction =
 	| "OPENWITH"
 	| "COPYPATH"

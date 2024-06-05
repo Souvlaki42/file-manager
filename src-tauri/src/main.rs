@@ -1,9 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use winapi::um::winnt::FILE_ATTRIBUTE_HIDDEN;
-use std::{fs, path::{Path, PathBuf}, os::windows::fs::MetadataExt, time::UNIX_EPOCH, process::Command, io::ErrorKind};
-use sysinfo::{System, Disks};
+use std::{
+    fs,
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    process::Command,
+    time::UNIX_EPOCH,
+};
+use sysinfo::{Disks, System};
 
 #[derive(Debug, serde::Serialize)]
 struct Drive {
@@ -16,7 +21,7 @@ struct Drive {
 #[derive(Debug, serde::Serialize, PartialEq, Clone, Copy)]
 enum DriveItemKind {
     Directory,
-    File
+    File,
 }
 
 #[derive(Debug, serde::Serialize, PartialEq)]
@@ -31,21 +36,10 @@ struct DriveItem {
 }
 
 fn is_hidden(path: &Path) -> bool {
-    #[cfg(unix)]
-    {
-        path.file_name()
-            .and_then(|name| name.to_str())
-            .map(|name| name.starts_with('.'))
-            .unwrap_or(false)
-    }
-
-    #[cfg(windows)]
-    {
-
-        let metadata = path.metadata().unwrap();
-        let attributes = metadata.file_attributes();
-        attributes & FILE_ATTRIBUTE_HIDDEN != 0
-    }
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.starts_with('.'))
+        .unwrap_or(false)
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -62,14 +56,23 @@ struct FolderPaths {
 #[tauri::command]
 fn open_file(file_path: String, open_with: bool) -> Result<(), String> {
     match Command::new("cmd")
-        .args(&["/C", "start", if open_with {"openwith"} else {""}, file_path.as_str()])
+        .args(&[
+            "/C",
+            "start",
+            if open_with { "openwith" } else { "" },
+            file_path.as_str(),
+        ])
         .status()
     {
         Ok(status) => {
             if status.success() {
                 Ok(())
             } else {
-                Err(format!("Failed to open {}for file: {}", if open_with { "'Open With' window "} else {""}, file_path))
+                Err(format!(
+                    "Failed to open {}for file: {}",
+                    if open_with { "'Open With' window " } else { "" },
+                    file_path
+                ))
             }
         }
         Err(e) => Err(format!("Error executing command: {}", e)),
@@ -96,8 +99,8 @@ fn create_file(file_path: String) -> Result<(), String> {
 #[tauri::command]
 fn create_folder(folder_path: String) -> Result<(), String> {
     match Command::new("cmd")
-    .args(&["/C", "mkdir", folder_path.as_str()])
-    .status()
+        .args(&["/C", "mkdir", folder_path.as_str()])
+        .status()
     {
         Ok(status) => {
             if status.success() {
@@ -130,8 +133,8 @@ fn delete_file(file_path: String) -> Result<(), String> {
 #[tauri::command]
 fn delete_folder(folder_path: String) -> Result<(), String> {
     match Command::new("cmd")
-    .args(&["/C", "rmdir", "/s", "/q", folder_path.as_str()])
-    .status()
+        .args(&["/C", "rmdir", "/s", "/q", folder_path.as_str()])
+        .status()
     {
         Ok(status) => {
             if status.success() {
@@ -154,7 +157,10 @@ fn rename_item(old_path: String, new_name: String) -> Result<(), String> {
             if status.success() {
                 Ok(())
             } else {
-                Err(format!("Failed to rename the item: {} to {}", old_path, new_name))
+                Err(format!(
+                    "Failed to rename the item: {} to {}",
+                    old_path, new_name
+                ))
             }
         }
         Err(e) => Err(format!("Error executing command: {}", e)),
@@ -174,57 +180,80 @@ fn get_folder_paths() -> FolderPaths {
     };
 
     if cfg!(windows) {
-        folder_paths.trash = PathBuf::from("C:\\$Recycle.Bin").as_path().to_string_lossy().to_string();
+        folder_paths.trash = PathBuf::from("C:\\$Recycle.Bin")
+            .as_path()
+            .to_string_lossy()
+            .to_string();
         folder_paths.desktop = PathBuf::from(format!(
             "{}\\Desktop",
             std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
+        ))
+        .as_path()
+        .to_string_lossy()
+        .to_string();
         folder_paths.downloads = PathBuf::from(format!(
             "{}\\Downloads",
             std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
+        ))
+        .as_path()
+        .to_string_lossy()
+        .to_string();
         folder_paths.documents = PathBuf::from(format!(
             "{}\\Documents",
             std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
+        ))
+        .as_path()
+        .to_string_lossy()
+        .to_string();
         folder_paths.pictures = PathBuf::from(format!(
             "{}\\Pictures",
             std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.music = PathBuf::from(format!(
-            "{}\\Music",
-            std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.videos = PathBuf::from(format!(
-            "{}\\Videos",
-            std::env::var("USERPROFILE").unwrap()
-        )).as_path().to_string_lossy().to_string();
+        ))
+        .as_path()
+        .to_string_lossy()
+        .to_string();
+        folder_paths.music =
+            PathBuf::from(format!("{}\\Music", std::env::var("USERPROFILE").unwrap()))
+                .as_path()
+                .to_string_lossy()
+                .to_string();
+        folder_paths.videos =
+            PathBuf::from(format!("{}\\Videos", std::env::var("USERPROFILE").unwrap()))
+                .as_path()
+                .to_string_lossy()
+                .to_string();
     } else {
-        folder_paths.trash = PathBuf::from("~/.local/share/Trash/files").as_path().to_string_lossy().to_string();
-        folder_paths.desktop = PathBuf::from(format!(
-            "{}/Desktop",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.downloads = PathBuf::from(format!(
-            "{}/Downloads",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.documents = PathBuf::from(format!(
-            "{}/Documents",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.pictures = PathBuf::from(format!(
-            "{}/Pictures",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.music = PathBuf::from(format!(
-            "{}/Music",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
-        folder_paths.videos = PathBuf::from(format!(
-            "{}/Videos",
-            std::env::var("HOME").unwrap()
-        )).as_path().to_string_lossy().to_string();
+        folder_paths.trash = PathBuf::from("~/.local/share/Trash/files")
+            .as_path()
+            .to_string_lossy()
+            .to_string();
+        folder_paths.desktop = PathBuf::from(format!("{}/Desktop", std::env::var("HOME").unwrap()))
+            .as_path()
+            .to_string_lossy()
+            .to_string();
+        folder_paths.downloads =
+            PathBuf::from(format!("{}/Downloads", std::env::var("HOME").unwrap()))
+                .as_path()
+                .to_string_lossy()
+                .to_string();
+        folder_paths.documents =
+            PathBuf::from(format!("{}/Documents", std::env::var("HOME").unwrap()))
+                .as_path()
+                .to_string_lossy()
+                .to_string();
+        folder_paths.pictures =
+            PathBuf::from(format!("{}/Pictures", std::env::var("HOME").unwrap()))
+                .as_path()
+                .to_string_lossy()
+                .to_string();
+        folder_paths.music = PathBuf::from(format!("{}/Music", std::env::var("HOME").unwrap()))
+            .as_path()
+            .to_string_lossy()
+            .to_string();
+        folder_paths.videos = PathBuf::from(format!("{}/Videos", std::env::var("HOME").unwrap()))
+            .as_path()
+            .to_string_lossy()
+            .to_string();
     }
     return folder_paths;
 }
@@ -239,12 +268,28 @@ fn get_volumes() -> Vec<Drive> {
 
     for disk in disks.list() {
         let raw_name = disk.name().to_string_lossy().trim().to_string();
-        let name = if raw_name.is_empty() { "Local Disk".to_string() } else { raw_name };
-        let letter = disk.mount_point().to_string_lossy().to_string().replace(":\\", "").chars().next().unwrap();
+        let name = if raw_name.is_empty() {
+            "Local Disk".to_string()
+        } else {
+            raw_name
+        };
+        let letter = disk
+            .mount_point()
+            .to_string_lossy()
+            .to_string()
+            .replace(":\\", "")
+            .chars()
+            .next()
+            .unwrap();
         let total = disk.total_space();
         let available = disk.available_space();
 
-        drives.push(Drive { name, letter, total, available });
+        drives.push(Drive {
+            name,
+            letter,
+            total,
+            available,
+        });
     }
 
     return drives;
@@ -328,7 +373,17 @@ fn get_contents(directory_path: String, recursive: bool) -> Vec<DriveItem> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_volumes, get_contents, get_folder_paths, open_file, create_file, create_folder, delete_file, delete_folder, rename_item])
+        .invoke_handler(tauri::generate_handler![
+            get_volumes,
+            get_contents,
+            get_folder_paths,
+            open_file,
+            create_file,
+            create_folder,
+            delete_file,
+            delete_folder,
+            rename_item
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
